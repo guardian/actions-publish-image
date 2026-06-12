@@ -1,0 +1,88 @@
+name: "Guardian Publish Image"
+description: "Tag and push a Docker image to Amazon ECR and return its image digest."
+inputs:
+  roleArn:
+    description: "The ARN of the role to assume to push the image."
+    required: true
+  branchName:
+    description: "The name of the branch being built. Will be used as an image tag."
+    required: true
+  buildNumber:
+    description: "The number of this build. Will be used as an image tag."
+    required: true
+  commitSha:
+    description: "The SHA of the commit being built. Will be used as an image tag."
+    required: true
+  imageName:
+    description: "The name of the image to push. Defaults to the repository name."
+    required: false
+    default: ${{ github.repository }}
+outputs:
+  imageDigest:
+    description: "The immutable digest of the pushed image."
+    value: ${{ steps.obtain-image-digest.outputs.imageDigest }}
+runs:
+  using: "composite"
+  steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v6.1.0
+      with:
+        role-to-assume: ${{ inputs.roleArn }}
+        aws-region: eu-west-1
+        mask-aws-account-id: 'true'
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2.1.3
+      with:
+        mask-password: 'true'
+
+    - name: Tag image
+      shell: bash
+      env:
+        REPOSITORY: ${{ github.repository }}
+        REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        BRANCH_NAME_INPUT: ${{ inputs.branchName }}
+        BUILD_NUMBER: ${{ inputs.buildNumber }}
+        COMMIT_SHA: ${{ inputs.commitSha }}
+        IMAGE_NAME: ${{ inputs.imageName }}
+      run: |
+        # Remove "refs/heads/" prefix
+        TRIMMED_BRANCH_NAME="${BRANCH_NAME_INPUT#refs/heads/}"
+        
+        # Replace '/' with '-' for ECR compatibility
+        BRANCH_NAME=${TRIMMED_BRANCH_NAME//\//-}
+        
+        docker image tag $IMAGE_NAME $REGISTRY/$REPOSITORY:branch-$BRANCH_NAME
+        docker image tag $IMAGE_NAME $REGISTRY/$REPOSITORY:build-$BUILD_NUMBER
+        docker image tag $IMAGE_NAME $REGISTRY/$REPOSITORY:sha-$COMMIT_SHA
+        docker image tag $IMAGE_NAME $REGISTRY/$REPOSITORY:lifecycle-$BRANCH_NAME-$BUILD_NUMBER
+
+    - name: Push image to Amazon ECR
+      shell: bash
+      env:
+        REPOSITORY: ${{ github.repository }}
+        REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      run: docker push $REGISTRY/$REPOSITORY --all-tags
+
+    - name: Obtain image digest
+      id: obtain-image-digest
+      shell: bash
+      env:
+        REPOSITORY: ${{ github.repository }}
+        REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        COMMIT_SHA: ${{ inputs.commitSha }}
+      run: |
+        IMAGE_DIGEST=$(docker manifest inspect $REGISTRY/$REPOSITORY:sha-$COMMIT_SHA --verbose | jq -r '.Descriptor.digest')
+        echo "imageDigest=${IMAGE_DIGEST}" >> $GITHUB_OUTPUT
+
+    # See https://github.com/aws-actions/configure-aws-credentials/issues/1308
+    - name: Clear AWS credentials
+      if: always()
+      shell: bash
+      run: |
+        echo "AWS_ACCESS_KEY_ID=''" >>"$GITHUB_ENV"
+        echo "AWS_SECRET_ACCESS_KEY=''" >>"$GITHUB_ENV"
+        echo "AWS_SESSION_TOKEN=''" >>"$GITHUB_ENV"
+        echo "AWS_DEFAULT_REGION=''" >>"$GITHUB_ENV"
+        echo "AWS_REGION=''" >>"$GITHUB_ENV"

@@ -11,6 +11,7 @@ See [`action.yml`](action.yml) for details on the available inputs and outputs.
 ## Permissions
 This Action requires the following permissions:
 - `id-token: write` - to obtain an OIDC token for authenticating with AWS ECR
+- `pull-requests: write` - to comment on pull requests
 
 The IAM Role passed to `roleArn` must also have permissions to push to ECR.
 This can be obtained by raising a PR to https://github.com/guardian/riffraff-platform.
@@ -48,6 +49,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v6.0.3
       
@@ -59,7 +61,8 @@ jobs:
         uses: guardian/actions-publish-image@v0.0.1
         with:
           roleArn: ${{ secrets.GU_RIFF_RAFF_ROLE_ARN }}
-          branch-name: ${{ needs.facts.outputs.branchName }}
-          build-number: ${{ needs.facts.outputs.buildNumber }}
-          commit-sha: ${{ needs.facts.outputs.commitSha }}
+          branchName: ${{ needs.facts.outputs.branchName }}
+          buildNumber: ${{ needs.facts.outputs.buildNumber }}
+          commitSha: ${{ needs.facts.outputs.commitSha }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
 ```

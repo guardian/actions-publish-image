@@ -6,3 +6,10 @@ updates:
       interval: "quarterly"
     commit-message:
       prefix: "chore(deps): "
+
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'quarterly'
+    commit-message:
+      prefix: "chore(deps): "

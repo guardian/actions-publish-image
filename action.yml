@@ -92,45 +92,9 @@ runs:
         echo "AWS_DEFAULT_REGION=''" >>"$GITHUB_ENV"
         echo "AWS_REGION=''" >>"$GITHUB_ENV"
 
-    - name: Get PR number
-      id: get-pr
-      uses: actions/github-script@v9
-      env:
-        COMMIT_SHA: ${{ inputs.commitSha }}
-      with:
-        github-token: ${{ inputs.githubToken }}
-        script: |
-          const { pull_request } = context.payload;
-          
-          if (pull_request) {
-            return pull_request.number;
-          }
-          
-          const commitSha = process.env.COMMIT_SHA;
-          
-          console.log(`Attempting to get PR number from commit ${commitSha}`);
-          
-          const result = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-            ...context.repo,
-            commit_sha: commitSha,
-          });
-          
-          const openPrs = result.data.filter(({ state }) => state === 'open');
-          const pr = openPrs.find((_) => context.ref === `refs/heads/${_.head.ref}`) ?? openPrs.at(0);
-          
-          if (!pr) {
-            console.error('Failed to identify PR number from commit.');
-            return undefined;
-          } else {
-            console.log(`Identified PR number as ${pr.number} from commit.`);
-            return pr.number;
-          }
-
-    - name: Comment on PR
-      uses: actions/github-script@v9
+    - uses: actions/github-script@v9
       env:
         IMAGE_NAME: ${{ inputs.imageName }}
-        PR_NUMBER: ${{ steps.get-pr.outputs.result }}
         IMAGE_DIGEST: ${{ steps.obtain-image-digest.outputs.imageDigest }}
         BRANCH_NAME_INPUT: ${{ inputs.branchName }}
         BUILD_NUMBER: ${{ inputs.buildNumber }}
@@ -138,92 +102,6 @@ runs:
       with:
         github-token: ${{ inputs.githubToken }}
         script: |
-          const { 
-            IMAGE_NAME,
-            PR_NUMBER,
-            IMAGE_DIGEST,
-            BRANCH_NAME_INPUT,
-            BUILD_NUMBER,
-            COMMIT_SHA
-          } = process.env;
-          
-          if(PR_NUMBER) {
-            const marker = `<!-- guardian/actions-publish-image for ${IMAGE_NAME} -->`;
-            
-            const comments = await github.rest.issues.listComments({
-              ...context.repo,
-              issue_number: PR_NUMBER,
-            });
-            
-            const previousComments = comments.data.filter((comment) => {
-              const fromBot = comment.user?.login === 'github-actions[bot]';
-              const fromMe = comment.body?.includes(marker) ?? false;
-              return fromBot && fromMe;
-            });
-            
-            const commentBody = [
-              '### :rocket: Image pushed to AWS ECR',
-              `Image digest: \`${IMAGE_DIGEST}\``,
-              '',
-              '<details>',
-              '<summary>:bug: Run the image locally</summary>',
-              '',
-              'The following can be used to run the image locally:',
-              '```bash',
-              '# Refer to image using the immutable digest. Find alternatives below.',
-              `IMAGE_IDENTIFIER="@${IMAGE_DIGEST}"`,
-              '',
-              '# Refer to image using branch tag',
-              `# IMAGE_IDENTIFIER=":branch-${BRANCH_NAME_INPUT.replaceAll('/', '-')}"`,
-              '',
-              '# Refer to image using build tag',
-              `# IMAGE_IDENTIFIER=":build-${BUILD_NUMBER}"`,
-              '',
-              '# Refer to image via the GitHub commit SHA tag',
-              `# IMAGE_IDENTIFIER=":sha-${COMMIT_SHA}"`,
-              '',
-              '# Set environment variables for the AWS CLI',
-              'AWS_PROFILE="<A_PROFILE_FROM_JANUS>"',
-              'AWS_DEFAULT_REGION="eu-west-1"',
-              '',
-              'IMAGE_ACCOUNT_ID=$(aws ssm get-parameter --name /organisation/accounts/deployTools --query "Parameter.Value" --output text)',
-              'REGISTRY="${IMAGE_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"',
-              `IMAGE="\${REGISTRY}/${context.repo.owner}/${context.repo.repo}\${IMAGE_IDENTIFIER}"`,
-              '',
-              '# Login to AWS ECR https://docs.aws.amazon.com/AmazonECR/latest/userguide/registry_auth.html',
-              'aws ecr get-login-password | docker login --username AWS --password-stdin $REGISTRY',
-              '',
-              '# Pull the image',
-              'docker pull $IMAGE',
-              '',
-              '# Run the image',
-              `docker run $IMAGE`,
-              '```',
-              '',
-              '</details>',
-              '',
-              '---',
-              '_From [guardian/actions-publish-image](https://github.com/guardian/actions-publish-image)._',
-              marker,
-            ].join('\n');
-            
-            if (previousComments.length === 0) {
-              await github.rest.issues.createComment({
-                issue_number: pullRequestNumber,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: commentBody
-              });
-            } else {
-              await Promise.all(
-                previousComments.map(async (previousComment) => {
-                  console.log(`Updating comment with id: ${previousComment.id}.`);
-                  await github.rest.issues.updateComment({
-                    ...context.repo,
-                    comment_id: previousComment.id,
-                    body: commentBody,
-                  });
-                }),
-              );
-            }
-          }
+          const path = require('node:path');
+          const codePath = path.join(process.env.GITHUB_ACTION_PATH, 'pr-comment.ts');
+          return await require(codePath).main({ core, context, github });

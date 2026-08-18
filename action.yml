@@ -17,6 +17,9 @@ inputs:
     description: "The name of the image to push. Defaults to the repository name."
     required: false
     default: ${{ github.repository }}
+  githubToken:
+    description: "A GitHub token scoped to allow pull request commenting"
+    required: true
 outputs:
   imageDigest:
     description: "The immutable digest of the pushed image."
@@ -38,6 +41,7 @@ runs:
         mask-password: 'true'
 
     - name: Tag image
+      id: tag-image
       shell: bash
       env:
         REPOSITORY: ${{ github.repository }}
@@ -57,6 +61,8 @@ runs:
         docker image tag $IMAGE_NAME $REGISTRY/$REPOSITORY:build-$BUILD_NUMBER
         docker image tag $IMAGE_NAME $REGISTRY/$REPOSITORY:sha-$COMMIT_SHA
         docker image tag $IMAGE_NAME $REGISTRY/$REPOSITORY:lifecycle-$BRANCH_NAME-$BUILD_NUMBER
+        
+        echo "safeBranchName=${BRANCH_NAME}" >> $GITHUB_OUTPUT
 
     - name: Push image to Amazon ECR
       shell: bash
@@ -88,3 +94,17 @@ runs:
         echo "AWS_SESSION_TOKEN=''" >>"$GITHUB_ENV"
         echo "AWS_DEFAULT_REGION=''" >>"$GITHUB_ENV"
         echo "AWS_REGION=''" >>"$GITHUB_ENV"
+
+    - uses: actions/github-script@v9
+      env:
+        IMAGE_NAME: ${{ inputs.imageName }}
+        IMAGE_DIGEST: ${{ steps.obtain-image-digest.outputs.imageDigest }}
+        SAFE_BRANCH_NAME: ${{ steps.tag-image.outputs.safeBranchName }}
+        BUILD_NUMBER: ${{ inputs.buildNumber }}
+        COMMIT_SHA: ${{ inputs.commitSha }}
+      with:
+        github-token: ${{ inputs.githubToken }}
+        script: |
+          const path = require('node:path');
+          const codePath = path.join(process.env.GITHUB_ACTION_PATH, 'pr-comment.ts');
+          return await require(codePath).main({ core, context, github });

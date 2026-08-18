@@ -41,6 +41,7 @@ runs:
         mask-password: 'true'
 
     - name: Tag image
+      id: tag-image
       shell: bash
       env:
         REPOSITORY: ${{ github.repository }}
@@ -60,6 +61,8 @@ runs:
         docker image tag $IMAGE_NAME $REGISTRY/$REPOSITORY:build-$BUILD_NUMBER
         docker image tag $IMAGE_NAME $REGISTRY/$REPOSITORY:sha-$COMMIT_SHA
         docker image tag $IMAGE_NAME $REGISTRY/$REPOSITORY:lifecycle-$BRANCH_NAME-$BUILD_NUMBER
+        
+        echo "safeBranchName=${BRANCH_NAME}" >> $GITHUB_OUTPUT
 
     - name: Push image to Amazon ECR
       shell: bash
@@ -96,7 +99,7 @@ runs:
       env:
         IMAGE_NAME: ${{ inputs.imageName }}
         IMAGE_DIGEST: ${{ steps.obtain-image-digest.outputs.imageDigest }}
-        BRANCH_NAME_INPUT: ${{ inputs.branchName }}
+        SAFE_BRANCH_NAME: ${{ steps.tag-image.outputs.safeBranchName }}
         BUILD_NUMBER: ${{ inputs.buildNumber }}
         COMMIT_SHA: ${{ inputs.commitSha }}
       with:

@@ -10,7 +10,7 @@ type Payload = {
 type Config = {
  imageName: string,
  imageDigest: string,
- branchNameInput: string,
+ branchName: string,
  buildNumber: string,
  commitSha: string
 }
@@ -19,7 +19,7 @@ function getConfig(): Config {
  const {
   IMAGE_NAME,
   IMAGE_DIGEST,
-  BRANCH_NAME_INPUT,
+  SAFE_BRANCH_NAME,
   BUILD_NUMBER,
   COMMIT_SHA
  } = process.env;
@@ -28,7 +28,7 @@ function getConfig(): Config {
  return {
   imageName: IMAGE_NAME as string,
   imageDigest: IMAGE_DIGEST as string,
-  branchNameInput: BRANCH_NAME_INPUT as string,
+  branchName: SAFE_BRANCH_NAME as string,
   buildNumber: BUILD_NUMBER as string,
   commitSha: COMMIT_SHA as string
  }
@@ -70,7 +70,7 @@ async function commentOnPr(payload: Payload, config: Config, pullRequestNumber: 
  const {
   imageName,
   imageDigest,
-  branchNameInput,
+  branchName,
   buildNumber,
   commitSha
  } = config;
@@ -91,7 +91,7 @@ async function commentOnPr(payload: Payload, config: Config, pullRequestNumber: 
   `IMAGE_IDENTIFIER="@${imageDigest}"`,
   '',
   '# Refer to image using branch tag',
-  `# IMAGE_IDENTIFIER=":branch-${branchNameInput.replaceAll('/', '-')}"`,
+  `# IMAGE_IDENTIFIER=":branch-${branchName}"`,
   '',
   '# Refer to image using build tag',
   `# IMAGE_IDENTIFIER=":build-${buildNumber}"`,

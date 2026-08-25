@@ -23,7 +23,10 @@ inputs:
 outputs:
   imageDigest:
     description: "The immutable digest of the pushed image."
-    value: ${{ steps.obtain-image-digest.outputs.imageDigest }}
+    value: ${{ steps.obtain-image-details.outputs.imageDigest }}
+  imageUri:
+    description: "The URI of the image."
+    value: ${{ steps.obtain-image-details.outputs.imageUri }}
 runs:
   using: "composite"
   steps:
@@ -71,8 +74,8 @@ runs:
         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: docker push $REGISTRY/$REPOSITORY --all-tags
 
-    - name: Obtain image digest
-      id: obtain-image-digest
+    - name: Obtain image details
+      id: obtain-image-details
       shell: bash
       env:
         REPOSITORY: ${{ github.repository }}
@@ -81,6 +84,9 @@ runs:
       run: |
         IMAGE_DIGEST=$(docker manifest inspect $REGISTRY/$REPOSITORY:sha-$COMMIT_SHA --verbose | jq -r '.Descriptor.digest')
         echo "imageDigest=${IMAGE_DIGEST}" >> $GITHUB_OUTPUT
+        
+        IMAGE_URI="$REGISTRY/$REPOSITORY@$IMAGE_DIGEST"
+        echo "imageUri=${IMAGE_URI}" >> $GITHUB_OUTPUT
 
     # Ideally, this Action is used in an isolated job, so that the AWS credentials (stored in environment variables) are not available to any other jobs.
     # However, if this Action is used in a job that has other steps, clear the AWS credentials from the environment at the end of the job to avoid leaking them to any subsequent steps.
@@ -98,7 +104,7 @@ runs:
     - uses: actions/github-script@v9
       env:
         IMAGE_NAME: ${{ inputs.imageName }}
-        IMAGE_DIGEST: ${{ steps.obtain-image-digest.outputs.imageDigest }}
+        IMAGE_DIGEST: ${{ steps.obtain-image-details.outputs.imageDigest }}
         SAFE_BRANCH_NAME: ${{ steps.tag-image.outputs.safeBranchName }}
         BUILD_NUMBER: ${{ inputs.buildNumber }}
         COMMIT_SHA: ${{ inputs.commitSha }}

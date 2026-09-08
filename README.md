@@ -3,7 +3,6 @@
 A ([composite](https://docs.github.com/en/actions/tutorials/create-actions/create-a-composite-action)) GitHub Action to tag and push a Docker image to Amazon ECR with the following tags:
 - `branch-<BRANCH_NAME>` (e.g. `branch-main`)
 - `build-<BUILD_NUMBER>` (e.g. `build-123`)
-- `commit-<COMMIT_SHA>` (e.g. `commit-abc123`)
 - `lifecycle-<BRANCH_NAME>-<BUILD_NUMBER>` (e.g. `lifecycle-main-123`). This tag is used in lifecycle rules defined in https://github.com/guardian/riffraff-platform to automatically delete old images.
 
 See [`action.yml`](action.yml) for details on the available inputs and outputs.

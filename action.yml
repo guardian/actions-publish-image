@@ -78,9 +78,9 @@ runs:
       env:
         REPOSITORY: ${{ github.repository }}
         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        COMMIT_SHA: ${{ inputs.commitSha }}
+        BUILD_NUMBER: ${{ inputs.buildNumber }}
       run: |
-        IMAGE_DIGEST=$(docker manifest inspect $REGISTRY/$REPOSITORY:sha-$COMMIT_SHA --verbose | jq -r '.Descriptor.digest')
+        IMAGE_DIGEST=$(docker manifest inspect $REGISTRY/$REPOSITORY:build-$BUILD_NUMBER --verbose | jq -r '.Descriptor.digest')
         echo "imageDigest=${IMAGE_DIGEST}" >> $GITHUB_OUTPUT
         
         IMAGE_URI="$REGISTRY/$REPOSITORY@$IMAGE_DIGEST"

@@ -51,7 +51,6 @@ runs:
         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         BRANCH_NAME_INPUT: ${{ inputs.branchName }}
         BUILD_NUMBER: ${{ inputs.buildNumber }}
-        COMMIT_SHA: ${{ inputs.commitSha }}
         IMAGE_NAME: ${{ inputs.imageName }}
       run: |
         # Remove "refs/heads/" prefix
@@ -62,7 +61,6 @@ runs:
         
         docker image tag $IMAGE_NAME $REGISTRY/$REPOSITORY:branch-$BRANCH_NAME
         docker image tag $IMAGE_NAME $REGISTRY/$REPOSITORY:build-$BUILD_NUMBER
-        docker image tag $IMAGE_NAME $REGISTRY/$REPOSITORY:sha-$COMMIT_SHA
         docker image tag $IMAGE_NAME $REGISTRY/$REPOSITORY:lifecycle-$BRANCH_NAME-$BUILD_NUMBER
         
         echo "safeBranchName=${BRANCH_NAME}" >> $GITHUB_OUTPUT

@@ -103,7 +103,7 @@ async function commentOnPr(payload: Payload, config: Config, pullRequestNumber: 
   'AWS_PROFILE="<A_PROFILE_FROM_JANUS>"',
   'AWS_DEFAULT_REGION="eu-west-1"',
   '',
-  'IMAGE_ACCOUNT_ID=$(aws ssm get-parameter --name /organisation/accounts/deployTools --query "Parameter.Value" --output text)',
+  'IMAGE_ACCOUNT_ID=$(aws ssm get-parameter --name /organisation/accounts/artifacts --query "Parameter.Value" --output text)',
   'REGISTRY="${IMAGE_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"',
   `IMAGE="\${REGISTRY}/${context.repo.owner}/${context.repo.repo}\${IMAGE_IDENTIFIER}"`,
   '',

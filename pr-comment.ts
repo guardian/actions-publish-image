@@ -72,7 +72,6 @@ async function commentOnPr(payload: Payload, config: Config, pullRequestNumber: 
   imageDigest,
   branchName,
   buildNumber,
-  commitSha
  } = config;
 
  const marker = `<!-- guardian/actions-publish-image for ${imageName} -->`;
@@ -95,9 +94,6 @@ async function commentOnPr(payload: Payload, config: Config, pullRequestNumber: 
   '',
   '# Refer to image using build tag',
   `# IMAGE_IDENTIFIER=":build-${buildNumber}"`,
-  '',
-  '# Refer to image via the GitHub commit SHA tag',
-  `# IMAGE_IDENTIFIER=":sha-${commitSha}"`,
   '',
   '# Set environment variables for the AWS CLI',
   'AWS_PROFILE="<A_PROFILE_FROM_JANUS>"',

@@ -101,7 +101,7 @@ async function commentOnPr(payload: Payload, config: Config, pullRequestNumber: 
   '',
   'IMAGE_ACCOUNT_ID=$(aws ssm get-parameter --name /organisation/accounts/artifacts --query "Parameter.Value" --output text)',
   'REGISTRY="${IMAGE_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"',
-  `IMAGE="\${REGISTRY}/${context.repo.owner}/${context.repo.repo}\${IMAGE_IDENTIFIER}"`,
+  `IMAGE="\${REGISTRY}/${imageName}\${IMAGE_IDENTIFIER}"`,
   '',
   '# Login to AWS ECR https://docs.aws.amazon.com/AmazonECR/latest/userguide/registry_auth.html',
   'aws ecr get-login-password | docker login --username AWS --password-stdin $REGISTRY',

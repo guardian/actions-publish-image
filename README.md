@@ -65,3 +65,5 @@ jobs:
           commitSha: ${{ needs.facts.outputs.commitSha }}
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+By default, images are published to `<organisation>/<repository>/<repository>`, in the case of repositories with multiple apps the `appName` property can be used to push to `<organisation>/<repository>/<appName>`.

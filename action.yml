@@ -4,15 +4,6 @@ inputs:
   roleArn:
     description: "The ARN of the role to assume to push the image."
     required: true
-  branchName:
-    description: "The name of the branch being built. Will be used as an image tag."
-    required: true
-  buildNumber:
-    description: "The number of this build. Will be used as an image tag."
-    required: true
-  commitSha:
-    description: "The SHA of the commit being built. Will be used as an image tag."
-    required: true
   appName:
     description: "An optional app name appended to the ECR image repository. Defaults to the repository name if not provided."
     required: false
@@ -30,6 +21,10 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Get Build Facts
+      uses: guardian/actions-build-facts@v0.0.1
+      id: get-build-facts
+    
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v6.2.3
       with:
@@ -49,8 +44,8 @@ runs:
       env:
         GITHUB_REPOSITORY: ${{ github.repository }}
         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        BRANCH_NAME_INPUT: ${{ inputs.branchName }}
-        BUILD_NUMBER: ${{ inputs.buildNumber }}
+        BRANCH_NAME_INPUT: ${{ steps.get-build-facts.outputs.branchName }}
+        BUILD_NUMBER: ${{ steps.get-build-facts.outputs.buildNumber }}
         APP_NAME: ${{ inputs.appName }}
       run: |
         # Remove "refs/heads/" prefix
@@ -109,7 +104,7 @@ runs:
       env:
         ECR_REPOSITORY: ${{ steps.tag-image.outputs.imageRepository }}
         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        BUILD_NUMBER: ${{ inputs.buildNumber }}
+        BUILD_NUMBER: ${{ steps.get-build-facts.outputs }}
       run: |
         IMAGE_DIGEST=$(docker manifest inspect $REGISTRY/$ECR_REPOSITORY:build-$BUILD_NUMBER --verbose | jq -r '.Descriptor.digest')
         echo "imageDigest=${IMAGE_DIGEST}" >> $GITHUB_OUTPUT
@@ -135,8 +130,8 @@ runs:
         IMAGE_REPOSITORY: ${{ steps.tag-image.outputs.imageRepository }}
         IMAGE_DIGEST: ${{ steps.obtain-image-details.outputs.imageDigest }}
         SAFE_BRANCH_NAME: ${{ steps.tag-image.outputs.safeBranchName }}
-        BUILD_NUMBER: ${{ inputs.buildNumber }}
-        COMMIT_SHA: ${{ inputs.commitSha }}
+        BUILD_NUMBER: ${{ steps.get-build-facts.outputs.buildNumber }}
+        COMMIT_SHA: ${{ steps.get-build-facts.outputs.commitSha }}
       with:
         github-token: ${{ inputs.githubToken }}
         script: |

@@ -112,7 +112,7 @@ runs:
 
     - uses: actions/github-script@v9
       env:
-        IMAGE_NAME: ${{ steps.tag-image.outputs.imageRepository }}
+        IMAGE_REPOSITORY: ${{ steps.tag-image.outputs.imageRepository }}
         IMAGE_DIGEST: ${{ steps.obtain-image-details.outputs.imageDigest }}
         SAFE_BRANCH_NAME: ${{ steps.tag-image.outputs.safeBranchName }}
         BUILD_NUMBER: ${{ inputs.buildNumber }}

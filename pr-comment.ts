@@ -8,7 +8,7 @@ type Payload = {
 }
 
 type Config = {
- imageName: string,
+ imageRepository: string,
  imageDigest: string,
  branchName: string,
  buildNumber: string,
@@ -17,7 +17,7 @@ type Config = {
 
 function getConfig(): Config {
  const {
-  IMAGE_NAME,
+  IMAGE_REPOSITORY,
   IMAGE_DIGEST,
   SAFE_BRANCH_NAME,
   BUILD_NUMBER,
@@ -26,7 +26,7 @@ function getConfig(): Config {
 
  // Whilst we're type-casting without checking the contents, these properties are modelled as required fields in action.yml (or have a default), so it should be safe.
  return {
-  imageName: IMAGE_NAME as string,
+  imageRepository: IMAGE_REPOSITORY as string,
   imageDigest: IMAGE_DIGEST as string,
   branchName: SAFE_BRANCH_NAME as string,
   buildNumber: BUILD_NUMBER as string,
@@ -68,13 +68,13 @@ async function commentOnPr(payload: Payload, config: Config, pullRequestNumber: 
  const { context, github } = payload;
 
  const {
-  imageName,
+  imageRepository,
   imageDigest,
   branchName,
   buildNumber,
  } = config;
 
- const marker = `<!-- guardian/actions-publish-image for ${imageName} -->`;
+ const marker = `<!-- guardian/actions-publish-image for ${imageRepository} -->`;
 
  const commentBody = [
   '### :rocket: Image pushed to AWS ECR',
@@ -101,7 +101,7 @@ async function commentOnPr(payload: Payload, config: Config, pullRequestNumber: 
   '',
   'IMAGE_ACCOUNT_ID=$(aws ssm get-parameter --name /organisation/accounts/artifacts --query "Parameter.Value" --output text)',
   'REGISTRY="${IMAGE_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"',
-  `IMAGE="\${REGISTRY}/${imageName}\${IMAGE_IDENTIFIER}"`,
+  `IMAGE="\${REGISTRY}/${imageRepository}\${IMAGE_IDENTIFIER}"`,
   '',
   '# Login to AWS ECR https://docs.aws.amazon.com/AmazonECR/latest/userguide/registry_auth.html',
   'aws ecr get-login-password | docker login --username AWS --password-stdin $REGISTRY',

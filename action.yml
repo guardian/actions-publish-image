@@ -69,9 +69,29 @@ runs:
           ECR_REPOSITORY=$ECR_REPOSITORY/$APP_NAME
         fi
 
-        docker image tag $APP_NAME $REGISTRY/$ECR_REPOSITORY:branch-$BRANCH_NAME
-        docker image tag $APP_NAME $REGISTRY/$ECR_REPOSITORY:build-$BUILD_NUMBER
-        docker image tag $APP_NAME $REGISTRY/$ECR_REPOSITORY:lifecycle-$BRANCH_NAME-$BUILD_NUMBER
+        # Look for a local image under the app name repository (e.g. built with `docker build -t <app name> .`)
+        # or the `guardian/<app name>` repository (e.g. built with `docker build -t ${{ github.repository }} .`),
+        # regardless of tag. Fail if more than one image is found across both repositories, since it's then
+        # ambiguous which to publish.
+        mapfile -t MATCHING_IMAGES < <(
+          docker images --format '{{.Repository}}:{{.Tag}}' "$APP_NAME"
+          docker images --format '{{.Repository}}:{{.Tag}}' "$GITHUB_REPOSITORY"
+        )
+
+        if [[ ${#MATCHING_IMAGES[@]} -gt 1 ]]; then
+          echo "Found multiple images under $APP_NAME and/or $GITHUB_REPOSITORY. Expected exactly one:" >&2
+          printf '%s\n' "${MATCHING_IMAGES[@]}" >&2
+          exit 1
+        elif [[ ${#MATCHING_IMAGES[@]} -eq 1 ]]; then
+          SOURCE_IMAGE="${MATCHING_IMAGES[0]}"
+        else
+          echo "No image found under $APP_NAME or $GITHUB_REPOSITORY." >&2
+          exit 1
+        fi
+
+        docker image tag $SOURCE_IMAGE $REGISTRY/$ECR_REPOSITORY:branch-$BRANCH_NAME
+        docker image tag $SOURCE_IMAGE $REGISTRY/$ECR_REPOSITORY:build-$BUILD_NUMBER
+        docker image tag $SOURCE_IMAGE $REGISTRY/$ECR_REPOSITORY:lifecycle-$BRANCH_NAME-$BUILD_NUMBER
         
         echo "safeBranchName=${BRANCH_NAME}" >> $GITHUB_OUTPUT
         echo "imageRepository=${ECR_REPOSITORY}" >> $GITHUB_OUTPUT

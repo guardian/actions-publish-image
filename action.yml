@@ -79,13 +79,15 @@ runs:
         )
 
         if [[ ${#MATCHING_IMAGES[@]} -gt 1 ]]; then
-          echo "Found multiple images under $APP_NAME and/or $GITHUB_REPOSITORY. Expected exactly one:" >&2
+          echo "Found multiple images under $APP_NAME and/or $GITHUB_REPOSITORY. Expected exactly one but found:" >&2
           printf '%s\n' "${MATCHING_IMAGES[@]}" >&2
           exit 1
         elif [[ ${#MATCHING_IMAGES[@]} -eq 1 ]]; then
           SOURCE_IMAGE="${MATCHING_IMAGES[0]}"
         else
           echo "No image found under $APP_NAME or $GITHUB_REPOSITORY." >&2
+          echo "Ensure that your docker image is named either \`$APP_NAME\` or \`$GITHUB_REPOSITORY\`." >&2
+          echo "If you're using \`docker buildx\` try the following format: \`docker buildx build -t $APP_NAME .\` or \`docker buildx build -t ${{ '\${{ github.repository }}' }}\`." >&2
           exit 1
         fi
 

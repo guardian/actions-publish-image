@@ -4,15 +4,6 @@ inputs:
   roleArn:
     description: "The ARN of the role to assume to push the image."
     required: true
-  branchName:
-    description: "The name of the branch being built. Will be used as an image tag."
-    required: true
-  buildNumber:
-    description: "The number of this build. Will be used as an image tag."
-    required: true
-  commitSha:
-    description: "The SHA of the commit being built. Will be used as an image tag."
-    required: true
   appName:
     description: "An optional app name appended to the ECR image repository. Defaults to the repository name if not provided."
     required: false
@@ -49,12 +40,12 @@ runs:
       env:
         GITHUB_REPOSITORY: ${{ github.repository }}
         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        BRANCH_NAME_INPUT: ${{ inputs.branchName }}
-        BUILD_NUMBER: ${{ inputs.buildNumber }}
+        RAW_BRANCH_NAME: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref || 'unknown' }}
+        BUILD_NUMBER: ${{ github.run_number }}
         APP_NAME: ${{ inputs.appName }}
       run: |
         # Remove "refs/heads/" prefix
-        TRIMMED_BRANCH_NAME="${BRANCH_NAME_INPUT#refs/heads/}"
+        TRIMMED_BRANCH_NAME="${RAW_BRANCH_NAME#refs/heads/}"
         
         # Replace '/' with '-' for ECR compatibility
         BRANCH_NAME=${TRIMMED_BRANCH_NAME//\//-}
@@ -111,7 +102,7 @@ runs:
       env:
         ECR_REPOSITORY: ${{ steps.tag-image.outputs.imageRepository }}
         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        BUILD_NUMBER: ${{ inputs.buildNumber }}
+        BUILD_NUMBER: ${{ github.run_number }}
       run: |
         IMAGE_DIGEST=$(docker manifest inspect $REGISTRY/$ECR_REPOSITORY:build-$BUILD_NUMBER --verbose | jq -r '.Descriptor.digest')
         echo "imageDigest=${IMAGE_DIGEST}" >> $GITHUB_OUTPUT
@@ -137,8 +128,8 @@ runs:
         IMAGE_REPOSITORY: ${{ steps.tag-image.outputs.imageRepository }}
         IMAGE_DIGEST: ${{ steps.obtain-image-details.outputs.imageDigest }}
         SAFE_BRANCH_NAME: ${{ steps.tag-image.outputs.safeBranchName }}
-        BUILD_NUMBER: ${{ inputs.buildNumber }}
-        COMMIT_SHA: ${{ inputs.commitSha }}
+        BUILD_NUMBER: ${{ github.run_number }}
+        COMMIT_SHA: ${{ github.sha }}
       with:
         github-token: ${{ inputs.githubToken }}
         script: |

@@ -59,7 +59,7 @@ jobs:
         # Find the latest version here - https://github.com/guardian/actions-publish-image/releases.
         uses: guardian/actions-publish-image@v0.0.1
         with:
-          roleArn: ${{ secrets.GU_RIFF_RAFF_ROLE_ARN }}
+          roleArn: ${{ secrets.GU_ARTIFACTS_ROLE_ARN }}
           branchName: ${{ needs.facts.outputs.branchName }}
           buildNumber: ${{ needs.facts.outputs.buildNumber }}
           commitSha: ${{ needs.facts.outputs.commitSha }}

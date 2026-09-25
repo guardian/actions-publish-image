@@ -1,10 +1,14 @@
 {
+  "name": "actions-publish-image",
+  "version": "0.0.8",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "release": "npx changeset"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.0",
     "@types/node": "26.2.0",
     "typescript": "7.0.2"
   },

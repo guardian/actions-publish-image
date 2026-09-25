@@ -67,3 +67,15 @@ jobs:
 ```
 
 By default, images are published to `<organisation>/<repository>/<repository>`, in the case of repositories with multiple apps the `appName` property can be used to push to `<organisation>/<repository>/<appName>`.
+
+## Releasing
+
+Automatic releases are handled by Changesets. Please see [here](https://github.com/changesets/changesets) for more information.
+
+### Release Automatically
+Run `npm run release` to bump the version and generate a changelog. 
+
+You will be prompted to select the type of release (major, minor, patch) and provide a description of the changes. This in turn will create a new changeset file in the `.changeset` directory with the release type and the description.
+
+### Do not Release Automatically
+If you don't want to create a new release, you can run `npm run release -- --empty` to create an empty changeset.

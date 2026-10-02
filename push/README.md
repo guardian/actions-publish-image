@@ -47,6 +47,7 @@ jobs:
         # Find the latest version here - https://github.com/guardian/actions-ecr/releases.
         uses: guardian/actions-ecr/push@vX.Y.Z
         with:
+          appName: my-app
           roleArn: ${{ secrets.GU_ARTIFACTS_ROLE_ARN }}
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 ```

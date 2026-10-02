@@ -9,8 +9,8 @@ inputs:
     required: false
     default: ${{ github.repository }}
   appName:
-    description: "(optional) The app name, appended to the ECR image repository. Defaults to the `name` portion of the `githubRepository` input."
-    required: false
+    description: "The app name, appended to the ECR image repository. Typically, the `name` portion of the `githubRepository` input."
+    required: true
   imageIdentifier:
     description: "An identifier of the image in ECR. Either the image digest of format (e.g. 'sha256:1234') or a tag (e.g. 'branch-main')."
     required: true
@@ -21,6 +21,28 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Validate inputs
+      shell: bash
+      env:
+        APP_NAME: ${{ inputs.appName }}
+        ROLE_ARN: ${{ inputs.roleArn }}
+        IMAGE_IDENTIFIER: ${{ inputs.imageIdentifier }}
+      run: |
+        if [[ -z "$APP_NAME" ]]; then
+          echo "appName is required and must not be empty."
+          exit 1
+        fi
+        
+        if [[ -z "ROLE_ARN" ]]; then
+          echo "roleArn is required and must not be empty."
+          exit 1
+        fi
+        
+        if [[ -z "IMAGE_IDENTIFIER" ]]; then
+          echo "imageIdentifier is required and must not be empty."
+          exit 1
+        fi
+
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v6.3.0
       with:
@@ -69,15 +91,7 @@ runs:
         IMAGE_IDENTIFIER_PREFIX: ${{ steps.determine-identifier-prefix.outputs.identifierPrefix }}
         IMAGE_IDENTIFIER: ${{ inputs.imageIdentifier }}
       run: |
-        # Default appName to the GitHub repository name (without the owner) if not provided
-        if [[ -z $APP_NAME ]]; then
-          APP_NAME="${GITHUB_REPOSITORY#*/}"
-        fi
-
-        IMAGE_REPOSITORY=$GITHUB_REPOSITORY
-        if [[ -n $APP_NAME ]]; then
-          IMAGE_REPOSITORY=$IMAGE_REPOSITORY/$APP_NAME
-        fi
+        IMAGE_REPOSITORY=$GITHUB_REPOSITORY/$APP_NAME
 
         IMAGE_URI="$REGISTRY/$IMAGE_REPOSITORY$IMAGE_IDENTIFIER_PREFIX$IMAGE_IDENTIFIER"
         echo "imageUri=${IMAGE_URI}" >> $GITHUB_OUTPUT

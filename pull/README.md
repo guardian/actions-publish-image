@@ -33,8 +33,9 @@ jobs:
       - uses: guardian/actions-ecr/pull@vX.Y.Z
         id: pull-image
         with:
-          roleArn: ${{ secrets.GU_ARTIFACTS_ROLE_ARN }}
+          appName: my-app
           imageIdentifier: branch-main
+          roleArn: ${{ secrets.GU_ARTIFACTS_ROLE_ARN }}
       - name: Run image from main
         env:
           IMAGE_URI: ${{ steps.pull-image.outputs.imageUri }}
@@ -61,9 +62,10 @@ jobs:
       - uses: guardian/actions-ecr/pull@vX.Y.Z
         id: pull-dcr-image
         with:
-          roleArn: ${{ secrets.GU_ARTIFACTS_ROLE_ARN }}
+          appName: dotcom-rendering
           githubRepository: guardian/dotcom-rendering
           imageIdentifier: branch-main
+          roleArn: ${{ secrets.GU_ARTIFACTS_ROLE_ARN }}
       - name: Run DCR
         env:
           IMAGE_URI: ${{ steps.pull-dcr-image.outputs.imageUri }}

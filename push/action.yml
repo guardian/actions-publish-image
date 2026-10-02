@@ -5,9 +5,8 @@ inputs:
     description: "The ARN of the role to assume to push the image."
     required: true
   appName:
-    description: "An optional app name appended to the ECR image repository. Defaults to the repository name if not provided."
-    required: false
-    default: ""
+    description: "The app name, appended to the ECR image repository. Typically the name of the GitHub repository, when not a multi-app GitHub repository."
+    required: true
   githubToken:
     description: "A GitHub token scoped to allow pull request commenting"
     required: true
@@ -21,6 +20,22 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Validate inputs
+      shell: bash
+      env:
+        APP_NAME: ${{ inputs.appName }}
+        ROLE_ARN: ${{ inputs.roleArn }}
+      run: |
+        if [[ -z "$APP_NAME" ]]; then
+          echo "appName is required and must not be empty."
+          exit 1
+        fi
+        
+        if [[ -z "ROLE_ARN" ]]; then
+          echo "roleArn is required and must not be empty."
+          exit 1
+        fi
+
     - name: Determine ECR repository and branch name
       id: determine-repository
       shell: bash
@@ -35,15 +50,7 @@ runs:
         # Replace '/' with '-' for ECR compatibility
         SAFE_BRANCH_NAME=${TRIMMED_BRANCH_NAME//\//-}
 
-        # Default appName to the github repository name (without the owner) if not provided
-        if [[ -z $APP_NAME ]]; then
-          APP_NAME="${GITHUB_REPOSITORY#*/}"
-        fi
-
-        IMAGE_REPOSITORY=$GITHUB_REPOSITORY
-        if [[ -n $APP_NAME ]]; then
-          IMAGE_REPOSITORY=$IMAGE_REPOSITORY/$APP_NAME
-        fi
+        IMAGE_REPOSITORY=$GITHUB_REPOSITORY/$APP_NAME
 
         echo "appName=${APP_NAME}" >> $GITHUB_OUTPUT
         echo "safeBranchName=${SAFE_BRANCH_NAME}" >> $GITHUB_OUTPUT
